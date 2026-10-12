@@ -8,11 +8,9 @@ import {
 
 import * as paymentLib from '../src/libs/payment.js';
 import * as analyticsLib from '../src/libs/analytics.js';
-
-// ======================================================================
 // PART 1: Real Internal Module Integration
 // Testing mocking.js + libs/ modules working together
-// ======================================================================
+
 describe('Integration: Business Logic + Internal Libs', () => {
 
   it('should integrate getShippingInfo with libs/shipping.js to return shipping details', () => {
@@ -34,10 +32,9 @@ describe('Integration: Business Logic + Internal Libs', () => {
 
 });
 
-// ======================================================================
 // PART 2: System Boundary Integration (I/O & Service Spies)
 // Testing integration while controlling external side-effects
-// ======================================================================
+
 describe('Integration: Order & Analytics Services', () => {
 
   it('should integrate submitOrder with payment.js using a service spy', async () => {
@@ -61,4 +58,51 @@ describe('Integration: Order & Analytics Services', () => {
     expect(analyticsSpy).toHaveBeenCalledWith('/home');
   });
 
+});
+
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import { submitOrder, getShippingInfo, getPriceInCurrency, renderPage } from '../src/mocking.js';
+import * as paymentLib from '../src/libs/payment.js';
+
+describe('Integration Tests - Core Modules & Lifecycle Hooks', () => {
+
+  beforeAll(() => {
+    process.env.TEST_ENV = 'true';
+  });
+
+  // Task 3: Setup hook - attach spy before every test
+  beforeEach(() => {
+    vi.spyOn(paymentLib, 'charge').mockResolvedValue({ status: 'success', transactionId: 'tx_123' });
+  });
+
+  // Task 3: Teardown hook - reset call history and restore function implementations
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    delete process.env.TEST_ENV;
+  });
+
+  it('should integrate getShippingInfo with libs/shipping.js to return shipping details', () => {
+    const info = getShippingInfo('US', 5);
+    // Fix 1: Expect string output matching return format
+    expect(info).toContain('Shipping Cost');
+  });
+
+  it('should process order through paymentLib service boundary', async () => {
+    // Fix 2: Pass totalAmount so paymentLib.charge receives 250
+    const result = await submitOrder({ totalAmount: 250 }, 'card_789');
+
+    expect(paymentLib.charge).toHaveBeenCalledWith('card_789', 250);
+    expect(paymentLib.charge).toHaveBeenCalledTimes(1);
+  });
+
+  it('should verify call counters reset to 0 for a clean test run', async () => {
+    // Passes cleanly because afterEach ran vi.restoreAllMocks()!
+    expect(paymentLib.charge).toHaveBeenCalledTimes(0);
+
+    await submitOrder({ totalAmount: 50 }, 'card_111');
+    expect(paymentLib.charge).toHaveBeenCalledTimes(1);
+  });
 });
