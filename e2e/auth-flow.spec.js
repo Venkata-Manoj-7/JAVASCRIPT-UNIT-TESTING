@@ -1,23 +1,34 @@
+import 'dotenv/config';
 import { test as it, expect } from '@playwright/test';
 import { AuthService } from './auth-service.js';
 
-
 const describe = it.describe;
 
-describe('E2E Suite: GitHub LaunchPad Board User Journey', () => {
-
-  it('should navigate to LaunchPad board using AuthService', async ({ page }) => {
+describe('E2E Suite: GitHub Auth Flows', () => {
+  it('should render sign-in form elements correctly', async ({ page }) => {
     const authService = new AuthService(page);
+    await authService.goToLogin();
 
-    // 1. Navigate to LaunchPad board using service helper
-    await authService.goToLaunchPad();
-
-    // 2. Assert page title
-    await expect(page).toHaveTitle(/Sign in to GitHub · GitHub/i);
-
-    // 3. Verify board UI container is loaded
-    await authService.verifyBoardLoaded();
-    await page.pause();
+    await expect(authService.usernameInput).toBeVisible();
+    await expect(authService.passwordInput).toBeVisible();
+    await expect(authService.submitButton).toBeVisible();
   });
 
+  it('should log in successfully with valid credentials', async ({ page }) => {
+    const authService = new AuthService(page);
+    await authService.goToLogin();
+
+    const email = process.env.TEST_USER_EMAIL;
+    const password = process.env.TEST_USER_PASSWORD;
+
+    if (!email || !password) {
+      throw new Error(
+        'Missing TEST_USER_EMAIL or TEST_USER_PASSWORD in .env'
+      );
+    }
+
+    await authService.login(email, password);
+
+    await expect(page).not.toHaveURL('https://github.com/login');
+  });
 });

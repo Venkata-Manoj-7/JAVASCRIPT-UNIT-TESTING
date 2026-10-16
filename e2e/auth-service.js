@@ -1,22 +1,34 @@
-// * Helper service for GitHub LaunchPad E2E authentication & navigation actions
+// e2e/auth-service.js
+
 export class AuthService {
   /**
    * @param {import('@playwright/test').Page} page
    */
   constructor(page) {
     this.page = page;
-    //this.launchPadUrl = 'https://github.com/orgs/Bhrish/projects/71';
-    this.loginUrl = 'https://github.com/login';
-    this.boardBody = page.locator('body');
+    
+    // Core locators for GitHub Login page
+    this.usernameInput = page.getByLabel('Username or email address');
+    this.passwordInput = page.getByLabel('Password');
+    this.submitButton = page.getByRole('button', { name: 'Sign in', exact: true });
+    this.errorMessage = page.locator('.flash-error');
   }
 
-  // Action: Navigate to the LaunchPad board
-  async goToLaunchPad() {
-    await this.page.goto(this.loginUrl);
+  /**
+   * Navigates directly to the GitHub login page
+   */
+  async goToLogin() {
+    await this.page.goto('https://github.com/login');
   }
 
-  // Action: Verify main board UI container is visible
-  async verifyBoardLoaded() {
-    await this.boardBody.waitFor({ state: 'visible' });
+  /**
+   * Fills in credentials and submits the login form
+   * @param {string} username
+   * @param {string} password
+   */
+  async login(username, password) {
+    await this.usernameInput.fill(username);
+    await this.passwordInput.fill(password);
+    await this.submitButton.click();
   }
 }
