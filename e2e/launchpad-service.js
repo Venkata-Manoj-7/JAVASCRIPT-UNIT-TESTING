@@ -21,8 +21,8 @@ export class LaunchpadService {
 
     // Repository projects page
     this.launchpadProjectLink = page.getByRole('link', {
-      name: new RegExp(testData.launchpad.projectLinkName, 'i'),
-    });
+      name: /LaunchPad/i,
+    }).first();
   }
 
   async goToLaunchpad() {
