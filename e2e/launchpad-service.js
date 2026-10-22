@@ -38,7 +38,7 @@ export class LaunchpadService {
     // LaunchPad project link
     this.launchpadProjectLink = page.getByRole('link', {
       name: /LaunchPad/i,
-    });
+    }).first();
   }
 
   /**
