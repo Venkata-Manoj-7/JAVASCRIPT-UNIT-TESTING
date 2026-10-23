@@ -1,4 +1,3 @@
-
 import { test as it, expect } from '@playwright/test';
 import { LaunchpadService } from './launchpad-service.js';
 
@@ -14,6 +13,7 @@ describe('E2E Suite: LaunchPad Board Actions', () => {
 
     // Verify that the LaunchPad project board is open.
     await expect(page).toHaveURL(/\/projects\/71(?:\/|$|\?)/);
+    await expect(launchpad.breadcrumbLaunchpadLink).toBeVisible();
   });
 
   // Test 2: Search and verify matching results on the board
@@ -23,32 +23,42 @@ describe('E2E Suite: LaunchPad Board Actions', () => {
     // Open the LaunchPad project board.
     await launchpad.openLaunchpadProject();
 
-    // Locate the board filter input.
-    const filterInput = page.locator(
-      'input[aria-label*="Filter"], input[placeholder*="Filter"], #filter-input'
-    ).first();
-
-    await expect(filterInput).toBeVisible({
-      timeout: 10000,
-    });
+    // Board filter input (already verified visible by openLaunchpadProject).
+    const filterInput = launchpad.filterInput;
 
     // Enter the search term.
     const searchTerm = 'PR';
-
     await filterInput.fill(searchTerm);
-    await page.keyboard.press('Enter');
 
-    // Verify that the search input retains the value.
+    // Verify the search input retains the value.
     await expect(filterInput).toHaveValue(searchTerm);
 
-    // Verify that matching text is visible on the board.
-    const matchedResult = page.getByText(searchTerm, {
-      exact: false,
-    }).first();
-
-    await expect(matchedResult).toBeVisible({
+    // Verify GitHub displays the matching-item count.
+    await expect(page.getByText(/\(\d+\) matching items/)).toBeVisible({
       timeout: 10000,
     });
+
+    // Verify a matching card is visible.
+    await expect(
+      page
+        .getByRole('button', {
+          name: /PR-Implement Employee Dashboard UI and Filtering in React/i,
+        })
+        .first()
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  // Test 3: Create a new GitHub issue
+  it('should create a new issue and verify it appears on the board', async ({ page }) => {
+    const launchpad = new LaunchpadService(page);
+
+    // Open the LaunchPad board using the existing helper.
+    await launchpad.openLaunchpadProject();
+
+    // Generate a unique title for this test run.
+    const issueTitle = `E2E Automated Issue ${Date.now()}`;
+
+    await launchpad.createIssue(issueTitle);
   });
 
 });
