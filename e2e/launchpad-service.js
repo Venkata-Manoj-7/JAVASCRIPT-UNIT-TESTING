@@ -145,9 +145,14 @@ export class LaunchpadService {
     // Step 8: Wait for the dialog to close
     await expect(createDialog).toBeHidden({ timeout: 15000 });
 
-    // Step 9: Verify the issue appears on the board
+    // Step 9: Verify the issue appears on the board.
+    // Cards are exposed as buttons whose accessible name starts with the title.
+    // New items that don't match the active view filter (e.g. assignee:@me)
+    // render as disabled cards, so match by role + name, not exact text.
+    const escapedTitle = issueTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
     await expect(
-      this.page.getByText(issueTitle, { exact: true }).first()
+      this.page.getByRole('button', { name: new RegExp(escapedTitle) }).first()
     ).toBeVisible({ timeout: 15000 });
   }
 }
