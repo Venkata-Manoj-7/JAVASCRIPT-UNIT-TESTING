@@ -5,7 +5,8 @@ import 'dotenv/config';
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.js',
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   reporter: 'html',
   use: {
     trace: 'on-first-retry',
