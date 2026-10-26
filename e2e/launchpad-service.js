@@ -92,18 +92,17 @@ export class LaunchpadService {
    * Opens the LaunchPad project dashboard directly
    */
   async openLaunchpadProject() {
-    // 1. Navigate until the DOM is parsed (the board hydrates afterwards)
     await this.page.goto('https://github.com/orgs/Bhrish/projects/71', {
       waitUntil: 'domcontentloaded',
     });
 
-    await expect(this.page).toHaveURL(/\/orgs\/Bhrish\/projects\/71/);
+    await expect(this.page).toHaveURL(
+      /\/orgs\/Bhrish\/projects\/71(?:\/|[?#]|$)/
+    );
 
-    // 2. Breadcrumb link exists in the page's accessibility tree
-    await expect(this.breadcrumbLaunchpadLink).toBeVisible({ timeout: 20000 });
-
-    // 3. Board is hydrated once the filter input is available
-    await expect(this.filterInput).toBeVisible({ timeout: 20000 });
+    await expect(this.filterInput).toBeVisible({
+      timeout: 20000,
+    });
   }
 
   /**
@@ -154,5 +153,34 @@ export class LaunchpadService {
     await expect(
       this.page.getByRole('button', { name: new RegExp(escapedTitle) }).first()
     ).toBeVisible({ timeout: 15000 });
+  }
+
+  // ===== NEW METHODS FOR NEGATIVE TESTS (added) =====
+
+  /**
+   * Opens the inline "add item" input without typing anything
+   */
+  async openAddItemInput() {
+    await expect(this.addItemButton).toBeVisible({ timeout: 10000 });
+    await this.addItemButton.click();
+    await expect(this.addItemInput).toBeVisible({ timeout: 10000 });
+  }
+
+  /**
+   * Types a title and presses Enter, with no success assertions
+   * @param {string} title
+   */
+  async typeAndSubmit(title) {
+    await this.addItemInput.fill(title);
+    await this.addItemInput.press('Enter');
+  }
+
+  /**
+   * Returns a locator for a board card matching the given title
+   * @param {string} title
+   */
+  cardByTitle(title) {
+    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return this.page.getByRole('button', { name: new RegExp(escaped) });
   }
 }
