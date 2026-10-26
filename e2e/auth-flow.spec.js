@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { test as it, expect } from '@playwright/test';
 import { AuthService } from './auth-service.js';
+it.use({ storageState: { cookies: [], origins: [] } });
 
 const describe = it.describe;
 
