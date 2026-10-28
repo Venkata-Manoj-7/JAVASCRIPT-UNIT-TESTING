@@ -1,0 +1,13 @@
+{
+  "urls": {
+    "login": "https://github.com/login"
+  },
+  "invalidUser": {
+    "email": "invalid-tester-00000@example.com",
+    "password": "InvalidPassword123!",
+    "expectedErrorMessage": "Incorrect username or password."
+  },
+  "uiElements": {
+    "submitButtonText": "Sign in"
+  }
+}
