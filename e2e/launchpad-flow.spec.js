@@ -1,56 +1,36 @@
-
-import { test as it, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { LaunchpadService } from './launchpad-service.js';
+import testData from './fixtures/testData.json' with { type: 'json' };
 
-const describe = it.describe;
+test.describe('Launchpad home and project navigation', () => {
+  let launchpad;
 
-describe('E2E Suite: GitHub Launchpad Flow Tests', () => {
-
-  // Test 1: Verify authenticated header controls
-  it('should render Launchpad header controls with authenticated state', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
-
+  test.beforeEach(async ({ page }) => {
+    launchpad = new LaunchpadService(page);
     await launchpad.goToLaunchpad();
+  });
 
+  test('Signed-in user sees their profile menu and search on the home page', async () => {
     await expect(launchpad.userAvatarButton).toBeVisible();
     await expect(launchpad.globalSearchInput).toBeVisible();
   });
 
-  // Test 2: Verify repository sidebar and item count
-  it('should assert repository sidebar visibility and item counts', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
-
-    await launchpad.goToLaunchpad();
-
-    await expect(launchpad.repoContainer.first()).toBeVisible({
-      timeout: 10000,
-    });
-
-    const count = await launchpad.repoListItems.count();
-
-    expect(count).toBeGreaterThan(0);
-  });
-
-  // Test 3: Verify repository search filtering
-  it('should dynamically filter repositories in the sidebar', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
-
-    await launchpad.goToLaunchpad();
-
-    await launchpad.filterRepositories('project-training');
-
-    // Verify that at least one filtered repository remains visible
+  test('User sees a list of their top repositories in the side panel', async () => {
     await expect(launchpad.repoListItems.first()).toBeVisible();
+    expect(await launchpad.repoListItems.count()).toBeGreaterThan(0);
   });
 
-  // Test 4: Navigate to the LaunchPad project dashboard
-  it('should navigate to repo projects and open LaunchPad dashboard', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
+  test('User can search and filter repositories by typing a project name', async () => {
+    const term = testData.launchpad.repoFilterQuery;
 
+    await launchpad.filterRepositories(term);
+
+    await expect(launchpad.repoListItems.first()).toContainText(new RegExp(term, 'i'));
+  });
+
+  test('User can open the LaunchPad project board from the repository projects page', async ({ page }) => {
     await launchpad.openLaunchpadProject();
 
-    // Verify that the LaunchPad project URL is open
-    await expect(page).toHaveURL(/\/projects\/71(?:\/|$|\?)/);
+    await expect(page).toHaveURL(new RegExp(testData.launchpad.projectUrlPattern));
   });
-
 });

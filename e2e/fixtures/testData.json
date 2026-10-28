@@ -1,13 +1,18 @@
 {
   "urls": {
-    "login": "https://github.com/login"
+    "login": "https://github.com/login",
+    "launchpad": "https://github.com/",
+    "repositoryProjects": "https://github.com/Bhrish/github-project-training/projects"
   },
   "invalidUser": {
     "email": "invalid-tester-00000@example.com",
     "password": "InvalidPassword123!",
     "expectedErrorMessage": "Incorrect username or password."
   },
-  "uiElements": {
-    "submitButtonText": "Sign in"
+  "launchpad": {
+    "topRepositoriesLabel": "Top repositories",
+    "projectLinkName": "LaunchPad",
+    "repoFilterQuery": "project-training",
+    "projectUrlPattern": "/projects/71(?:/|$|\\?)"
   }
 }
