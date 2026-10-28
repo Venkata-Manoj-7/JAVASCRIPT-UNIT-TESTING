@@ -21,8 +21,14 @@ export class LaunchpadService {
 
     // Repository projects page
     this.launchpadProjectLink = page.getByRole('link', {
-      name: /LaunchPad/i,
-    }).first();
+      name: new RegExp(testData.launchpad.projectLinkName, 'i'),
+    });
+
+    // Project board
+    this.boardFilterInput = page
+      .getByRole('textbox', { name: /filter/i })
+      .or(page.getByPlaceholder(/filter/i))
+      .first();
   }
 
   async goToLaunchpad() {
@@ -42,5 +48,14 @@ export class LaunchpadService {
   async openLaunchpadProject() {
     await this.goToRepositoryProjects();
     await this.launchpadProjectLink.click();
+  }
+
+  async filterBoard(searchTerm) {
+    await this.boardFilterInput.fill(searchTerm);
+    await this.boardFilterInput.press('Enter');
+  }
+
+  boardItemsMatching(searchTerm) {
+    return this.page.getByText(searchTerm).first();
   }
 }

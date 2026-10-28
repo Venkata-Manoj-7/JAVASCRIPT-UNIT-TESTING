@@ -13,6 +13,7 @@
     "topRepositoriesLabel": "Top repositories",
     "projectLinkName": "LaunchPad",
     "repoFilterQuery": "project-training",
+    "boardFilterQuery": "PR",
     "projectUrlPattern": "/projects/71(?:/|$|\\?)"
   }
 }
