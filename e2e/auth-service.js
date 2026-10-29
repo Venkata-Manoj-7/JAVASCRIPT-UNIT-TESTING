@@ -1,13 +1,16 @@
 export class AuthService {
-   constructor(page) {
+  
+  constructor(page) {
     this.page = page;
-    this.usernameInput = page.getByLabel('Username or email address');
-    this.passwordInput = page.getByLabel('Password');
-    this.submitButton = page.getByRole('button', { name: 'Sign in', exact: true });
-    this.errorMessage = page.locator('.flash-error');
+    // Uses GitHub's exact form IDs with getByLabel fallbacks
+    this.usernameInput = page.locator('#login_field');
+    this.passwordInput = page.locator('#password');
+    this.submitButton = page.locator('input[type="submit"][name="commit"]');
   }
+
   async goToLogin() {
     await this.page.goto('https://github.com/login');
+    await this.page.waitForLoadState('domcontentloaded');
   }
   async login(username, password) {
     await this.usernameInput.fill(username);
