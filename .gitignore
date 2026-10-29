@@ -1,15 +1,16 @@
-# Environment variables & secrets
+# Environment & Secrets
 .env
+.env.*
 .env.local
-.env.*.local
 !.env.example
 
-# Playwright
+# Playwright artifacts & sessions
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+.auth/
 
 # Dependencies & build outputs
 node_modules/

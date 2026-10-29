@@ -1,4 +1,7 @@
 import { expect } from '@playwright/test';
+import testData from './fixtures/testData.json' with { type: 'json' };
+
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export class LaunchpadService {
   /**
@@ -9,178 +12,153 @@ export class LaunchpadService {
 
     // Header controls
     this.userAvatarButton = page
-      .locator('header button:has(img), header button:has(.avatar)')
-      .last();
-
-    this.globalSearchInput = page
-      .getByRole('button', { name: /search/i })
+      .getByRole('button', { name: /open user navigation menu/i })
+      .or(page.locator('header button:has(img.avatar)'))
       .first();
+    this.globalSearchInput = page.getByRole('button', { name: /search/i }).first();
 
-    // Repository sidebar
-    this.repoContainer = page.getByText('Top repositories', { exact: true });
+    // Repository side panel
+    this.repoContainer = page.getByText(testData.launchpad.topRepositoriesLabel, { exact: true });
+    // TODO: replace with a role/test id found via `npx playwright codegen`
+    this.repoListItems = page.locator('a[href^="/"]:has-text("/"):visible');
+    this.repoSearchButton = page.getByTestId('dynamic-side-panel-items-search-button');
+    this.repoSearchInput = page.getByTestId('dynamic-side-panel-items-search-input');
 
-    this.repoListItems = page.locator('a[href^="/"]:has-text("/")');
+    // Repository projects page
+    this.launchpadProjectLink = page.getByRole('link', {
+      name: new RegExp(testData.launchpad.projectLinkName, 'i'),
+    });
 
-    // Repository search controls
-    this.repoSearchButton = page.getByTestId(
-      'dynamic-side-panel-items-search-button'
-    );
-
-    this.repoSearchInput = page.getByTestId(
-      'dynamic-side-panel-items-search-input'
-    );
-
-    // LaunchPad project link
-    this.launchpadProjectLink = page
-      .getByRole('link', { name: /LaunchPad/i })
-      .first();
-
-    // Board controls
+    // Project board
     this.breadcrumbLaunchpadLink = page
       .getByRole('navigation', { name: 'Breadcrumbs' })
-      .getByRole('link', { name: 'LaunchPad' });
-
-    this.filterInput = page.getByRole('combobox', {
-      name: 'Filter',
-      exact: true,
-    });
-
-    // Backlog controls
-    this.addItemButton = page
-      .getByRole('button', { name: /Add item to Backlog|Add item/i })
+      .getByRole('link', { name: testData.launchpad.projectLinkName });
+    this.boardFilterInput = page
+      .getByRole('combobox', { name: /filter/i })
+      .or(page.getByRole('textbox', { name: /filter/i }))
+      .or(page.getByPlaceholder(/filter/i))
+      .or(page.locator('input[aria-label*="Filter" i], #filter-input'))
       .first();
-
-    this.addItemInput = page.getByRole('combobox', {
-      name: /Start typing to create an item/i,
+    this.matchingItemsMessage = page.getByText(new RegExp(testData.launchpad.matchingItemsPattern));
+    this.enabledCards = page.getByRole('button', {
+      name: new RegExp(testData.launchpad.cardNamePattern),
+      disabled: false,
     });
+
+    // Backlog: card creation
+    this.addItemButton = page.getByRole('button', { name: /Add item to Backlog|Add item/i }).first();
+    this.addItemInput = page.getByRole('combobox', { name: /Start typing to create an item/i });
+    this.createIssueDialog = page.getByRole('dialog');
+
+    // Issue side panel
+    this.statusButton = page.getByRole('button', { name: /^Status/i }).first();
   }
 
-  /**
-   * Opens GitHub homepage
-   */
+  // ---------- Navigation ----------
+
   async goToLaunchpad() {
-    await this.page.goto('https://github.com/', {
-      waitUntil: 'domcontentloaded',
-    });
-
-    await expect(this.repoContainer).toBeVisible({ timeout: 15000 });
+    await this.page.goto(testData.urls.launchpad);
+    await expect(this.repoContainer).toBeVisible();
   }
 
-  /**
-   * Filters repositories in the sidebar
-   * @param {string} searchTerm
-   */
-  async filterRepositories(searchTerm) {
-    await expect(this.repoSearchButton).toBeVisible();
-    await this.repoSearchButton.click();
+  async goToRepositoryProjects() {
+    await this.page.goto(testData.urls.repositoryProjects);
+  }
 
-    await expect(this.repoSearchInput).toBeVisible();
+  async openLaunchpadProject() {
+    await this.goToRepositoryProjects();
+    await this.launchpadProjectLink.click();
+    await expect(this.page).toHaveURL(new RegExp(testData.launchpad.projectUrlPattern));
+    await expect(this.boardFilterInput).toBeVisible();
+  }
+
+  // ---------- Repository side panel ----------
+
+  async filterRepositories(searchTerm) {
+    await this.repoSearchButton.click();
     await this.repoSearchInput.fill(searchTerm);
   }
 
-  /**
-   * Opens the repository's Projects page
-   */
-  async goToRepositoryProjects() {
-    await this.page.goto(
-      'https://github.com/Bhrish/github-project-training/projects',
-      { waitUntil: 'domcontentloaded' }
-    );
+  // ---------- Board filter ----------
+
+  async filterBoard(searchTerm) {
+    await this.boardFilterInput.fill(searchTerm);
+    await this.boardFilterInput.press('Enter');
   }
 
-  /**
-   * Opens the LaunchPad project dashboard directly
-   */
-  async openLaunchpadProject() {
-    await this.page.goto('https://github.com/orgs/Bhrish/projects/71', {
-      waitUntil: 'domcontentloaded',
-    });
-
-    await expect(this.page).toHaveURL(
-      /\/orgs\/Bhrish\/projects\/71(?:\/|[?#]|$)/
-    );
-
-    await expect(this.filterInput).toBeVisible({
-      timeout: 20000,
-    });
+ boardItemsMatching(searchTerm) {
+  return this.cardByTitle(searchTerm).first();
+}
+  /** Locator for board cards whose name contains the given title. */
+  cardByTitle(title) {
+    return this.page.getByRole('button', { name: new RegExp(escapeRegExp(title)) });
   }
 
-  /**
-   * Creates a new GitHub issue from the LaunchPad board.
-   * @param {string} issueTitle
-   */
-  async createIssue(issueTitle) {
-    // Step 1: Click Add item
-    await expect(this.addItemButton).toBeVisible({ timeout: 10000 });
-    await this.addItemButton.click();
+  // ---------- Card creation ----------
 
-    // Step 2: Wait for the inline input at the bottom of Backlog
-    await expect(this.addItemInput).toBeVisible({ timeout: 10000 });
-
-    // Step 3: Enter the issue title
-    await this.addItemInput.fill(issueTitle);
-
-    // Step 4: Press Enter to open creation option menu
-    await this.addItemInput.press('Enter');
-
-    // Step 5: Wait for the creation dialog modal
-    const createDialog = this.page.getByRole('dialog');
-    await expect(createDialog).toBeVisible({ timeout: 10000 });
-
-    // Step 6: Verify the title is populated
-    await expect(
-      createDialog.getByRole('textbox', { name: /add a title/i })
-    ).toHaveValue(issueTitle);
-
-    // Step 7: Submit via explicit button or shortcut
-    const createButton = createDialog.getByTestId('create-issue-button');
-
-    if (await createButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await createButton.click();
-    } else {
-      await createDialog.press('Control+Enter');
-    }
-
-    // Step 8: Wait for the dialog to close
-    await expect(createDialog).toBeHidden({ timeout: 15000 });
-
-    // Step 9: Verify the issue appears on the board.
-    // Cards are exposed as buttons whose accessible name starts with the title.
-    // New items that don't match the active view filter (e.g. assignee:@me)
-    // render as disabled cards, so match by role + name, not exact text.
-    const escapedTitle = issueTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    await expect(
-      this.page.getByRole('button', { name: new RegExp(escapedTitle) }).first()
-    ).toBeVisible({ timeout: 15000 });
-  }
-
-  // ===== NEW METHODS FOR NEGATIVE TESTS (added) =====
-
-  /**
-   * Opens the inline "add item" input without typing anything
-   */
   async openAddItemInput() {
-    await expect(this.addItemButton).toBeVisible({ timeout: 10000 });
     await this.addItemButton.click();
-    await expect(this.addItemInput).toBeVisible({ timeout: 10000 });
+    await expect(this.addItemInput).toBeVisible();
   }
 
-  /**
-   * Types a title and presses Enter, with no success assertions
-   * @param {string} title
-   */
+  /** Types a title and presses Enter, without asserting the outcome. */
   async typeAndSubmit(title) {
     await this.addItemInput.fill(title);
     await this.addItemInput.press('Enter');
   }
 
-  /**
-   * Returns a locator for a board card matching the given title
-   * @param {string} title
-   */
-  cardByTitle(title) {
-    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return this.page.getByRole('button', { name: new RegExp(escaped) });
+  /** Creates an issue from the Backlog column. Callers assert the card appears. */
+  async createIssue(issueTitle) {
+    await this.openAddItemInput();
+    await this.typeAndSubmit(issueTitle);
+
+    await expect(this.createIssueDialog).toBeVisible();
+    await expect(
+      this.createIssueDialog.getByRole('textbox', { name: /add a title/i })
+    ).toHaveValue(issueTitle);
+
+    // Use the Create button when it is shown, otherwise the keyboard shortcut.
+    const createButton = this.createIssueDialog.getByTestId('create-issue-button');
+    if (await createButton.isVisible()) {
+      await createButton.click();
+    } else {
+      await this.createIssueDialog.press('Control+Enter');
+    }
+
+    await expect(this.createIssueDialog).toBeHidden();
+  }
+
+  // ---------- Issue side panel ----------
+
+  async openFirstCard() {
+    const firstCard = this.enabledCards.first();
+    await expect(firstCard).toBeVisible();
+    await firstCard.getByRole('heading', { level: 3 }).click();
+  }
+
+  async closeSidePanel() {
+    await this.page.keyboard.press('Escape');
+  }
+
+  statusOption(statusName) {
+    const name = new RegExp(statusName, 'i');
+    return this.page
+      .getByRole('option', { name })
+      .or(this.page.getByRole('menuitemradio', { name }))
+      .or(this.page.getByRole('menuitem', { name }))
+      .first();
+  }
+
+  async currentStatusText() {
+    await expect(this.statusButton).toBeVisible();
+    return this.statusButton.innerText();
+  }
+
+  async changeStatus(statusName) {
+    await this.statusButton.click();
+    const option = this.statusOption(statusName);
+    await expect(option).toBeVisible();
+    await option.click();
+    await expect(option).toBeHidden();
   }
 }

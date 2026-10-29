@@ -1,35 +1,35 @@
 import 'dotenv/config';
-import { test as it, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { AuthService } from './auth-service.js';
-it.use({ storageState: { cookies: [], origins: [] } });
+import testData from './fixtures/testData.json' with { type: 'json' };
 
-const describe = it.describe;
+// Reset session storage so this spec always starts logged out
+test.use({ storageState: { cookies: [], origins: [] } });
 
-describe('E2E Suite: GitHub Auth Flows', () => {
-  it('should render sign-in form elements correctly', async ({ page }) => {
+test.describe('GitHub Authentication - Form Validation and User Login Flows', () => {
+  test('verify sign-in form displays all required inputs and submit button', async ({ page }) => {
     const authService = new AuthService(page);
     await authService.goToLogin();
-
     await expect(authService.usernameInput).toBeVisible();
     await expect(authService.passwordInput).toBeVisible();
     await expect(authService.submitButton).toBeVisible();
   });
 
-  it('should log in successfully with valid credentials', async ({ page }) => {
+
+  test('authenticate successfully with valid credentials and redirect to dashboard', async ({ page }) => {
     const authService = new AuthService(page);
     await authService.goToLogin();
-
     const email = process.env.TEST_USER_EMAIL;
     const password = process.env.TEST_USER_PASSWORD;
 
     if (!email || !password) {
       throw new Error(
-        'Missing TEST_USER_EMAIL or TEST_USER_PASSWORD in .env'
+        'Missing TEST_USER_EMAIL or TEST_USER_PASSWORD in .env configuration'
       );
     }
 
     await authService.login(email, password);
 
-    await expect(page).not.toHaveURL('https://github.com/login');
+    await expect(page).not.toHaveURL(testData.urls.login);
   });
 });

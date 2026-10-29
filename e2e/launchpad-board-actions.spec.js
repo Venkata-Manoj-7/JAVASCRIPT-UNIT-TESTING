@@ -1,64 +1,35 @@
-import { test as it, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { LaunchpadService } from './launchpad-service.js';
+import testData from './fixtures/testData.json' with { type: 'json' };
 
-const describe = it.describe;
+test.describe('LaunchPad project board actions', () => {
+  let launchpad;
 
-describe('E2E Suite: LaunchPad Board Actions', () => {
-
-  // Test 1: Direct navigation to LaunchPad board
-  it('should navigate directly to LaunchPad project board', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
-
+  test.beforeEach(async ({ page }) => {
+    launchpad = new LaunchpadService(page);
     await launchpad.openLaunchpadProject();
+  });
 
-    // Verify that the LaunchPad project board is open.
-    await expect(page).toHaveURL(/\/projects\/71(?:\/|$|\?)/);
+  test('User can open the LaunchPad project board directly', async ({ page }) => {
+    await expect(page).toHaveURL(new RegExp(testData.launchpad.projectUrlPattern));
     await expect(launchpad.breadcrumbLaunchpadLink).toBeVisible();
   });
 
-  // Test 2: Search and verify matching results on the board
-  it('should search and filter cards on the LaunchPad board', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
+test('User can filter board cards by typing a keyword', async () => {
+  const term = testData.launchpad.boardFilterQuery;
 
-    // Open the LaunchPad project board.
-    await launchpad.openLaunchpadProject();
+  await launchpad.filterBoard(term);
 
-    // Board filter input (already verified visible by openLaunchpadProject).
-    const filterInput = launchpad.filterInput;
+  await expect(launchpad.boardFilterInput).toHaveValue(term);
+  await expect(launchpad.matchingItemsMessage).toBeVisible();
+  await expect(launchpad.boardItemsMatching(term)).toBeVisible();
+});
 
-    // Enter the search term.
-    const searchTerm = 'PR';
-    await filterInput.fill(searchTerm);
+  test('User can create a new issue and see it as a card on the board', async () => {
+    const title = `${testData.launchpad.newIssueTitlePrefix} ${Date.now()}`;
 
-    // Verify the search input retains the value.
-    await expect(filterInput).toHaveValue(searchTerm);
+    await launchpad.createIssue(title);
 
-    // Verify GitHub displays the matching-item count.
-    await expect(page.getByText(/\(\d+\) matching items/)).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Verify a matching card is visible.
-    await expect(
-      page
-        .getByRole('button', {
-          name: /PR-Implement Employee Dashboard UI and Filtering in React/i,
-        })
-        .first()
-    ).toBeVisible({ timeout: 10000 });
+    await expect(launchpad.cardByTitle(title).first()).toBeVisible();
   });
-
-  // Test 3: Create a new GitHub issue
-  it('should create a new issue and verify it appears on the board', async ({ page }) => {
-    const launchpad = new LaunchpadService(page);
-
-    // Open the LaunchPad board using the existing helper.
-    await launchpad.openLaunchpadProject();
-
-    // Generate a unique title for this test run.
-    const issueTitle = `E2E Automated Issue ${Date.now()}`;
-
-    await launchpad.createIssue(issueTitle);
-  });
-
 });

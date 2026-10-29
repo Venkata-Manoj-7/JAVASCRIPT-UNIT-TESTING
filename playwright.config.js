@@ -8,8 +8,12 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: 'html',
+  timeout: 60000,
+  expect: {
+    timeout: 15000,
+  },
   use: {
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
   },
   projects: [
     // 1. Setup project to perform login once
