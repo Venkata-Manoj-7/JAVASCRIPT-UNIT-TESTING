@@ -14,6 +14,13 @@
     "projectLinkName": "LaunchPad",
     "repoFilterQuery": "project-training",
     "boardFilterQuery": "PR",
-    "projectUrlPattern": "/projects/71(?:/|$|\\?)"
+    "projectUrlPattern": "/projects/71(?:/|$|\\?)",
+    "cardNamePattern": "github-project-training\\s?#\\d+",
+    "issuePaneUrlPattern": "[?&]pane=issue",
+    "issueItemIdUrlPattern": "[?&]itemId=",
+    "targetStatus": "In Progress",
+    "alternateStatus": "Backlog",
+    "newIssueTitlePrefix": "E2E Automated Issue",
+    "matchingItemsPattern": "\\(\\d+\\) matching items"
   }
 }

@@ -56,3 +56,38 @@ An automated end-to-end testing suite built with [Playwright](https://playwright
 ├── package.json
 ├── playwright.config.js
 └── README.md
+
+
+## Board Actions: Card Creation & Filtering
+
+Spec: e2e/launchpad-board-actions.spec.js
+
+Test vs 	What it verifies
+User can open the LaunchPad project board directly:
+         Opening the project from the repository projects page lands on the board URL (/projects/71).
+
+User can filter board cards by typing a keyword:
+ 	Typing a keyword into the board filter keeps the value in the box and shows matching cards.
+
+User can create a new card on the board:
+ 	A new card/issue is created from the board and appears in the list.
+
+
+
+Spec: e2e/launchpad-sidepanel-transitions.spec.js
+
+Test   vs 	What it verifies
+User can open a card to see its details and close it again	:
+     Clicking a card heading opens the side panel (URL contains pane=issue and itemId=); pressing Escape closes it.
+
+User can change a card status from its side panel:
+
+    Opening the Status menu and choosing an option updates the status shown on the card.
+
+How it works
+
+openFirstCard() finds the first enabled card on the board and clicks its heading.
+changeStatus(statusName) opens the Status dropdown and picks the matching option, whether GitHub renders it as an option, menuitemradio or menuitem.
+closeSidePanel() presses Escape.
+The target status (launchpad.targetStatus, default "In Progress") and the URL patterns (issuePaneUrlPattern, issueItemIdUrlPattern) live in testData.json.
+
