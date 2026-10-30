@@ -2,7 +2,8 @@
   "urls": {
     "login": "https://github.com/login",
     "launchpad": "https://github.com/",
-    "repositoryProjects": "https://github.com/Bhrish/github-project-training/projects"
+    "repositoryProjects": "https://github.com/Bhrish/github-project-training/projects",
+    "launchpadProject": "https://github.com/orgs/Bhrish/projects/71"
   },
   "invalidUser": {
     "email": "invalid-tester-00000@example.com",
@@ -21,6 +22,7 @@
     "targetStatus": "In Progress",
     "alternateStatus": "Backlog",
     "newIssueTitlePrefix": "E2E Automated Issue",
-    "matchingItemsPattern": "\\(\\d+\\) matching items"
+    "matchingItemsPattern": "\\(\\d+\\) matching items",
+    "caseFilterQuery": "Automated"
   }
 }

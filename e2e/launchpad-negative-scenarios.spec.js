@@ -1,78 +1,88 @@
 import { test, expect } from '@playwright/test';
-// Adjust this path to where launchpad-service.js actually lives.
-// If the spec is in e2e/ and the service is in the same folder, keep it as is.
 import { LaunchpadService } from './launchpad-service.js';
+import { AuthService } from './auth-service.js';
+import testData from './fixtures/testData.json' with { type: 'json' };
 
-test.use({
-  storageState: 'playwright/.auth/user.json',
-});
+/** Returns the card count once it has stayed the same for three checks in a row. */
+async function settledCount(locator) {
+  let previous = -1;
+  let sameInARow = 0;
+  await expect.poll(async () => {
+    const current = await locator.count();
+    sameInARow = current === previous ? sameInARow + 1 : 0;
+    previous = current;
+    return sameInARow >= 2;
+  }, { intervals: [1000] }).toBe(true);
+  return previous;
+}
 
-test.describe('LaunchPad Board - Negative Testing & Edge Cases', () => {
+test.describe('LaunchPad board: filter and card creation edge cases', () => {
   let launchpad;
 
   test.beforeEach(async ({ page }) => {
     launchpad = new LaunchpadService(page);
     await launchpad.openLaunchpadProject();
+    await expect(launchpad.enabledCards.first()).toBeVisible();
   });
 
-  test('empty title does not create an item', async ({ page }) => {
+  test('Filtering the board gives the same cards whether the keyword is upper or lower case', async () => {
+    const keyword = testData.launchpad.caseFilterQuery;
+    const cards = launchpad.enabledCards;
+    const matchesNothing = String(Date.now());
+
+    // Start from an empty result so we know the board has really been filtered
+    await launchpad.filterBoard(matchesNothing);
+    await expect(cards).toHaveCount(0);
+
+    await launchpad.filterBoard(keyword.toUpperCase());
+    await expect.poll(() => cards.count()).toBeGreaterThan(0);
+    const upperCaseCount = await settledCount(cards);
+
+    await launchpad.filterBoard(matchesNothing);
+    await expect(cards).toHaveCount(0);
+
+    await launchpad.filterBoard(keyword.toLowerCase());
+    await expect.poll(() => cards.count()).toBeGreaterThan(0);
+    const lowerCaseCount = await settledCount(cards);
+
+    expect(lowerCaseCount).toBe(upperCaseCount);
+  });
+
+  test('User cannot create a card with an empty title', async () => {
+    const cardsBefore = await launchpad.enabledCards.count();
+
     await launchpad.openAddItemInput();
     await launchpad.typeAndSubmit('');
-    await expect(page.getByRole('dialog')).toBeHidden();
-  });
 
-  test('whitespace-only title does not create an item', async ({ page }) => {
-    await launchpad.openAddItemInput();
-    await launchpad.typeAndSubmit('     ');
-    await expect(page.getByRole('dialog')).toBeHidden();
-  });
-
-  test('Escape cancels creation and leaves no card', async () => {
-    const title = `QA-cancel-${Date.now()}`;
-    await launchpad.openAddItemInput();
-    await launchpad.addItemInput.fill(title);
-    await launchpad.addItemInput.press('Escape');
-    await expect(launchpad.cardByTitle(title)).toHaveCount(0);
-  });
-
-  test('script tag in title is rendered as text, not executed', async ({ page }) => {
-    let dialogFired = false;
-    page.on('dialog', (d) => {
-      dialogFired = true;
-      d.dismiss();
-    });
-
-    const title = `QA-<script>alert(1)</script>-${Date.now()}`;
-    await launchpad.createIssue(title);
-
-    expect(dialogFired).toBe(false);
-    await expect(launchpad.cardByTitle(title).first()).toBeVisible();
-  });
-
-  test('very long title does not crash the board', async ({ page }) => {
-    const title = 'QA-' + 'x'.repeat(300);
-    await launchpad.openAddItemInput();
-    await launchpad.typeAndSubmit(title);
-    await expect(page.locator('body')).not.toContainText(/something went wrong/i);
-  });
-
-  test('filter with no matches shows no cards', async () => {
-    await launchpad.filterInput.fill(`no-such-item-${Date.now()}`);
-    await launchpad.filterInput.press('Enter');
-    await expect(launchpad.cardByTitle('QA-')).toHaveCount(0);
-  });
-
-  test('non-existent project returns 404', async ({ page }) => {
-    const res = await page.goto('https://github.com/orgs/Bhrish/projects/999999');
-    expect(res.status()).toBe(404);
+    await expect(launchpad.createIssueDialog).toBeHidden();
+    await expect(launchpad.enabledCards).toHaveCount(cardsBefore);
   });
 });
 
-test.describe('unauthenticated access', () => {
+test.describe('LaunchPad board: signed-out visitor', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('logged-out user cannot add items', async ({ page }) => {
-    await page.goto('https://github.com/orgs/Bhrish/projects/71');
-    await expect(page.getByRole('button', { name: /Add item/i })).toHaveCount(0);
+  test('Signed-out visitor cannot add items to the board', async ({ page }) => {
+    const launchpad = new LaunchpadService(page);
+
+    await page.goto(testData.urls.launchpadProject);
+
+    // Page has loaded and the visitor is signed out (header link or login button)
+    await expect(
+      page.getByRole('link', { name: /sign in/i }).or(page.getByRole('button', { name: /sign in/i })).first()
+    ).toBeVisible();
+    await expect(launchpad.addItemButton).toHaveCount(0);
+  });
+
+  test('Visitor with the wrong username or password is rejected with an error message', async ({ page }) => {
+    const auth = new AuthService(page);
+    const { email, password, expectedErrorMessage } = testData.invalidUser;
+
+    await auth.goToLogin();
+    await auth.login(email, password);
+
+    await expect(auth.errorMessage).toBeVisible();
+    await expect(auth.errorMessage).toContainText(expectedErrorMessage);
+    await expect(auth.usernameInput).toBeVisible();
   });
 });

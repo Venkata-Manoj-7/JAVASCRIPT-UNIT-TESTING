@@ -5,6 +5,7 @@ export class AuthService {
     // Uses GitHub's exact form IDs with getByLabel fallbacks
     this.usernameInput = page.locator('#login_field');
     this.passwordInput = page.locator('#password');
+    this.errorMessage = page.locator('.flash-error:visible');
     this.submitButton = page.locator('input[type="submit"][name="commit"]');
   }
 
