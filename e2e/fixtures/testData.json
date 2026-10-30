@@ -1,0 +1,26 @@
+{
+  "urls": {
+    "login": "https://github.com/login",
+    "launchpad": "https://github.com/",
+    "repositoryProjects": "https://github.com/Bhrish/github-project-training/projects"
+  },
+  "invalidUser": {
+    "email": "invalid-tester-00000@example.com",
+    "password": "InvalidPassword123!",
+    "expectedErrorMessage": "Incorrect username or password."
+  },
+  "launchpad": {
+    "topRepositoriesLabel": "Top repositories",
+    "projectLinkName": "LaunchPad",
+    "repoFilterQuery": "project-training",
+    "boardFilterQuery": "PR",
+    "projectUrlPattern": "/projects/71(?:/|$|\\?)",
+    "cardNamePattern": "github-project-training\\s?#\\d+",
+    "issuePaneUrlPattern": "[?&]pane=issue",
+    "issueItemIdUrlPattern": "[?&]itemId=",
+    "targetStatus": "In Progress",
+    "alternateStatus": "Backlog",
+    "newIssueTitlePrefix": "E2E Automated Issue",
+    "matchingItemsPattern": "\\(\\d+\\) matching items"
+  }
+}
